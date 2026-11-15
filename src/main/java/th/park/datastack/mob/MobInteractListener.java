@@ -107,12 +107,25 @@ public final class MobInteractListener implements Listener {
         if (!(e.getEntity() instanceof LivingEntity src)) return;
         String reason = e.getTransformReason().name();
         long count = StackCount.get(src);
+        if (src.isDead() || src.getPersistentDataContainer().has(MobDeathListener.DYING, PersistentDataType.BYTE)) {
+            // e.g. INFECTION: the villager died first and MobDeathListener already spawned the count-1
+            // replacement; only the converted body must not carry the stack's count or label
+            if (count > 1) {
+                Component lbl = src.customName();
+                for (Entity t : e.getTransformedEntities()) clearStackData(t, lbl);
+            }
+            return;
+        }
         if (!InteractPolicy.transformOne(count, reason)) return;
         // the rest of the stack stays as the old kind; the source transforms as a single member
         Component srcLabel = src.getPersistentDataContainer().has(Keys.LABEL, PersistentDataType.BYTE) ? src.customName() : null;
+        // a tadpole loaded with a frog-age turns into a frog while being copied: zero the age first
+        // (the source is already mid-conversion, so this does not stop it)
+        if (src instanceof org.bukkit.entity.Tadpole tp) tp.setAge(0);
         LivingEntity rest = splitCopy(src, count - 1);
         if (rest == null) return; // leave vanilla alone rather than lose members
-        if (reason.equals("LIGHTNING")) lightningImmune.put(rest.getUniqueId(), System.currentTimeMillis() + LIGHTNING_IMMUNE_MS);
+        resetConversion(rest);
+        if (reason.equals("LIGHTNING")) immunize(rest.getUniqueId());
         StackCount.set(src, 1); // also drops the xN label, so the new entity does not inherit it
         for (Entity t : e.getTransformedEntities()) clearStackData(t, srcLabel);
         Bukkit.getScheduler().runTask(plugin, () -> {
@@ -148,6 +161,25 @@ public final class MobInteractListener implements Listener {
     public void onLightningFire(org.bukkit.event.entity.EntityCombustByEntityEvent e) {
         if (e.getCombuster() instanceof org.bukkit.entity.LightningStrike && immune(e.getEntity().getUniqueId()))
             e.setCancelled(true);
+    }
+
+    private void immunize(UUID id) {
+        long now = System.currentTimeMillis();
+        lightningImmune.values().removeIf(until -> until < now); // purge expired on each insert
+        lightningImmune.put(id, now + LIGHTNING_IMMUNE_MS);
+    }
+
+    /**
+     * The copy inherits the source's in-progress conversion (cure timer, drowning, freezing,
+     * overworld zombification, tadpole age); without a reset it would convert next tick and the
+     * whole stack would transform one by one.
+     */
+    static void resetConversion(LivingEntity r) {
+        if (r instanceof org.bukkit.entity.Zombie z) z.setConversionTime(-1); // incl. zombie villager cure, husk
+        if (r instanceof org.bukkit.entity.Skeleton sk) sk.setConversionTime(-1);
+        if (r instanceof org.bukkit.entity.PiglinAbstract pa) pa.setConversionTime(-1);
+        if (r instanceof org.bukkit.entity.Hoglin h) h.setConversionTime(-1);
+        if (r instanceof org.bukkit.entity.Tadpole t) t.setAge(0);
     }
 
     private boolean immune(UUID id) {
