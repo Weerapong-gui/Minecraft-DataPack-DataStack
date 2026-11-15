@@ -14,4 +14,12 @@ class LabelsTest {
         assertEquals("x65", Labels.text(65, 64));
         assertEquals("x1000", Labels.text(1000, 1));
     }
+    @Test void isOursMatchesOnlyLabelShape() {
+        assertTrue(Labels.isOurs("x2"));
+        assertTrue(Labels.isOurs("x1000"));
+        assertFalse(Labels.isOurs("Bob"));
+        assertFalse(Labels.isOurs("x"));
+        assertFalse(Labels.isOurs("x12a"));
+        assertFalse(Labels.isOurs(null));
+    }
 }

@@ -18,6 +18,8 @@ public final class DataStack extends JavaPlugin {
             getConfig().getInt("max-item-stack", 10000));
     }
 
+    @Override public void onDisable() { instance = null; }
+
     public Config cfg() { return cfg; }
 
     public static DataStack get() { return instance; }

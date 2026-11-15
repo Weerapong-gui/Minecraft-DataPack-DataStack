@@ -13,7 +13,7 @@ if [ ! -f "$JUNIT" ]; then
   mkdir -p lib
   curl -fsSL -o "$JUNIT.tmp" "$JUNIT_URL"
   EXPECT="$(curl -fsSL "$JUNIT_URL.sha1" | tr -d ' \n' | cut -c1-40)"
-  ACTUAL="$(sha1sum "$JUNIT.tmp" | cut -d' ' -f1)"
+  if command -v sha1sum >/dev/null; then ACTUAL="$(sha1sum "$JUNIT.tmp" | cut -d' ' -f1)"; else ACTUAL="$(shasum -a 1 "$JUNIT.tmp" | cut -d' ' -f1)"; fi
   if [ "$EXPECT" != "$ACTUAL" ]; then
     rm -f "$JUNIT.tmp"; echo "junit checksum mismatch ($EXPECT != $ACTUAL)" >&2; exit 1
   fi

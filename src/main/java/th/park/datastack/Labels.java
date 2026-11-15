@@ -8,4 +8,9 @@ public final class Labels {
     public static String text(long count, int threshold) {
         return count > threshold ? "x" + count : null;
     }
+
+    /** True if a plain-text name has the shape of a plugin label: "x" followed by digits. */
+    public static boolean isOurs(String plainName) {
+        return plainName != null && plainName.matches("x\\d+");
+    }
 }

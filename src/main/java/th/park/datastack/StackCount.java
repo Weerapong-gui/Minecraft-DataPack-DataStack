@@ -1,6 +1,7 @@
 package th.park.datastack;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -27,7 +28,11 @@ public final class StackCount {
 
     private static void refreshLabel(Entity e, long count) {
         PersistentDataContainer pdc = e.getPersistentDataContainer();
-        boolean ours = pdc.has(Keys.LABEL, PersistentDataType.BYTE);
+        boolean marked = pdc.has(Keys.LABEL, PersistentDataType.BYTE);
+        String plain = e.customName() == null ? null
+            : PlainTextComponentSerializer.plainText().serialize(e.customName());
+        boolean ours = marked && Labels.isOurs(plain);
+        if (marked && !ours) pdc.remove(Keys.LABEL); // renamed by a player: name is theirs now
         int threshold = e instanceof Item item ? item.getItemStack().getMaxStackSize() : 1;
         String text = Labels.text(count, threshold);
         if (text != null) {
