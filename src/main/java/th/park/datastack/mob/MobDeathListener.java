@@ -34,7 +34,27 @@ public final class MobDeathListener implements Listener {
             preHitHealth.put(le.getUniqueId(), le.getHealth());
     }
 
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onRemove(com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent e) {
+        preHitHealth.remove(e.getEntity().getUniqueId());
+    }
+
+    private static boolean wholeStack(LivingEntity dead) {
+        EntityDamageEvent last = dead.getLastDamageCause();
+        return DeathPolicy.of(last == null ? null : last.getCause().name()) == DeathPolicy.Outcome.WHOLE_STACK;
+    }
+
+    /** Drop changes only; if a later listener cancels the death, the drops never happen. */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onDeathDrops(EntityDeathEvent e) {
+        LivingEntity dead = e.getEntity();
+        long count = StackCount.get(dead);
+        if (count <= 1 || dead.getPersistentDataContainer().has(DYING, PersistentDataType.BYTE)) return;
+        if (wholeStack(dead)) multiplyDrops(e, dead, count);
+    }
+
+    /** Runs once the death is final (not cancelled), so a replacement can never dupe a surviving mob. */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDeath(EntityDeathEvent e) {
         LivingEntity dead = e.getEntity();
         Double before = preHitHealth.remove(dead.getUniqueId());
@@ -43,15 +63,7 @@ public final class MobDeathListener implements Listener {
         var pdc = dead.getPersistentDataContainer();
         if (pdc.has(DYING, PersistentDataType.BYTE)) return;
         pdc.set(DYING, PersistentDataType.BYTE, (byte) 1);
-
-        EntityDamageEvent last = dead.getLastDamageCause();
-        String cause = last == null ? null : last.getCause().name();
-        if (DeathPolicy.of(cause) == DeathPolicy.Outcome.WHOLE_STACK) {
-            multiplyDrops(e, dead, count);
-        } else {
-            double hp = before == null ? maxHealth(dead) : before;
-            spawnReplacement(dead, count - 1, hp);
-        }
+        if (!wholeStack(dead)) spawnReplacement(dead, count - 1, before == null ? maxHealth(dead) : before);
     }
 
     private static void multiplyDrops(EntityDeathEvent e, LivingEntity dead, long count) {
@@ -93,15 +105,25 @@ public final class MobDeathListener implements Listener {
     /**
      * Spawns the next stack member in place of {@code dead}: same type and data, no equipment
      * (and zero drop chances), the given health clamped to [1, max], and count {@code newCount}.
-     * Returns null if the spawn failed. Only effect besides the spawn: none on {@code dead}.
+     * Returns null if the spawn failed. Only effect on {@code dead}: a leash is released (its lead drops once).
      */
     public static LivingEntity spawnReplacement(LivingEntity dead, long newCount, double health) {
+        // unleash first so the lead drops once (from dead) and copy() carries no leash
+        // (releasing a dead mob's leash drops nothing, so drop the lead here)
+        if (dead.isLeashed()) {
+            dead.setLeashHolder(null);
+            dead.getWorld().dropItemNaturally(dead.getLocation(), new ItemStack(org.bukkit.Material.LEAD));
+        }
         Entity copy = dead.copy(dead.getLocation());
         if (!(copy instanceof LivingEntity r)) {
             if (copy != null) copy.remove();
             return null;
         }
         r.getPersistentDataContainer().remove(DYING);
+        // copy() carries riders and leash: drop both so they cannot be duplicated
+        for (Entity p : r.getPassengers()) { r.removePassenger(p); p.remove(); }
+        r.leaveVehicle();
+        if (r.isLeashed()) r.setLeashHolder(null);
         EntityEquipment eq = r.getEquipment();
         if (eq != null) {
             eq.clear();

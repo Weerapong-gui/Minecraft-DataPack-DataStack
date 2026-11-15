@@ -53,7 +53,7 @@ public final class DataStack extends JavaPlugin {
             if (set) {
                 long n;
                 try { n = Long.parseLong(args[1]); } catch (NumberFormatException ex) { return false; }
-                StackCount.set(le, n);
+                StackCount.set(le, Math.max(1, n));
             }
             sender.sendMessage("[DataStack] " + le.getType() + " " + le.getUniqueId()
                 + " count=" + StackCount.get(le) + " health=" + le.getHealth());
