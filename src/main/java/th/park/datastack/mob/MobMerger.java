@@ -84,8 +84,10 @@ public final class MobMerger implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onLoad(EntitiesLoadEvent ev) {
-        for (Entity en : ev.getEntities())
-            if (en instanceof LivingEntity le && le.isValid()) tryMerge(le);
+        var list = ev.getEntities();
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            for (Entity en : list) if (en instanceof LivingEntity le && le.isValid()) tryMerge(le);
+        }, 1L);
     }
 
     private void sweepTick() {
