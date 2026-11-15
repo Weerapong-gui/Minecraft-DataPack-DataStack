@@ -19,4 +19,15 @@ class DeathPolicyTest {
         assertEquals(DeathPolicy.Outcome.ONE, DeathPolicy.of("SOMETHING_NEW"));
         assertEquals(DeathPolicy.Outcome.ONE, DeathPolicy.of(null));
     }
+    @Test void entityLitFireKillsOne() {
+        assertEquals(DeathPolicy.Outcome.ONE, DeathPolicy.of("FIRE_TICK", true));
+        assertEquals(DeathPolicy.Outcome.ONE, DeathPolicy.of("FIRE", true));
+        assertEquals(DeathPolicy.Outcome.WHOLE_STACK, DeathPolicy.of("FIRE_TICK", false));
+        assertEquals(DeathPolicy.Outcome.WHOLE_STACK, DeathPolicy.of("FIRE", false));
+    }
+    @Test void flagDoesNotChangeOtherEnvironmentCauses() {
+        for (String c : new String[]{"LAVA", "DROWNING", "FALL", "LIGHTNING", "HOT_FLOOR"})
+            assertEquals(DeathPolicy.Outcome.WHOLE_STACK, DeathPolicy.of(c, true), c);
+        assertEquals(DeathPolicy.Outcome.ONE, DeathPolicy.of("ENTITY_ATTACK", true));
+    }
 }

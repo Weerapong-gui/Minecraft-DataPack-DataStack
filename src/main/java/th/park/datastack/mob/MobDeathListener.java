@@ -34,14 +34,30 @@ public final class MobDeathListener implements Listener {
             preHitHealth.put(le.getUniqueId(), le.getHealth());
     }
 
+    /** Stacks set burning by an entity (not lightning): their fire death is an attack, kills one. */
+    private static final Map<UUID, Long> entityLit = new HashMap<>();
+    private static final long ENTITY_LIT_MS = 60_000;
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onCombustByEntity(org.bukkit.event.entity.EntityCombustByEntityEvent e) {
+        if (e.getCombuster() instanceof org.bukkit.entity.LightningStrike) return; // lightning is environment
+        if (!(e.getEntity() instanceof LivingEntity le) || StackCount.get(le) <= 1) return;
+        long now = System.currentTimeMillis();
+        entityLit.values().removeIf(until -> until < now);
+        entityLit.put(le.getUniqueId(), now + ENTITY_LIT_MS);
+    }
+
     @EventHandler(priority = EventPriority.MONITOR)
     public void onRemove(com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent e) {
         preHitHealth.remove(e.getEntity().getUniqueId());
+        entityLit.remove(e.getEntity().getUniqueId());
     }
 
     private static boolean wholeStack(LivingEntity dead) {
         EntityDamageEvent last = dead.getLastDamageCause();
-        return DeathPolicy.of(last == null ? null : last.getCause().name()) == DeathPolicy.Outcome.WHOLE_STACK;
+        Long lit = entityLit.get(dead.getUniqueId());
+        boolean attacked = dead.getKiller() != null || (lit != null && lit >= System.currentTimeMillis());
+        return DeathPolicy.of(last == null ? null : last.getCause().name(), attacked) == DeathPolicy.Outcome.WHOLE_STACK;
     }
 
     /** Drop changes only; if a later listener cancels the death, the drops never happen. */
@@ -117,6 +133,8 @@ public final class MobDeathListener implements Listener {
         Entity copy = dead.copy(dead.getLocation());
         if (!(copy instanceof LivingEntity r)) {
             if (copy != null) copy.remove();
+            org.bukkit.Bukkit.getLogger().warning("[DataStack] could not copy " + dead.getType() + " at "
+                + dead.getLocation().toVector() + ": " + newCount + " stack members lost");
             return null;
         }
         r.getPersistentDataContainer().remove(DYING);

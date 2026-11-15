@@ -14,6 +14,16 @@ public final class DeathPolicy {
 
     /** Takes the DamageCause name; anything unknown kills one at a time. */
     public static Outcome of(String damageCauseName) {
+        return of(damageCauseName, false);
+    }
+
+    /**
+     * As {@link #of(String)}, but burning set by an entity (Fire Aspect, Flame arrow, a mob's fire)
+     * or with a recent player killer counts as an attack: it kills one member (spec rule 4).
+     */
+    public static Outcome of(String damageCauseName, boolean entityIgnitedOrPlayerKill) {
+        if (entityIgnitedOrPlayerKill && ("FIRE".equals(damageCauseName) || "FIRE_TICK".equals(damageCauseName)))
+            return Outcome.ONE;
         return damageCauseName != null && ENVIRONMENT.contains(damageCauseName) ? Outcome.WHOLE_STACK : Outcome.ONE;
     }
 }
