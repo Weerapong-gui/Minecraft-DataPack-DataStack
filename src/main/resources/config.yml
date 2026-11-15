@@ -1,0 +1,4 @@
+mob-radius: 5.0
+item-radius: 2.5
+max-mob-stack: 100
+max-item-stack: 10000
