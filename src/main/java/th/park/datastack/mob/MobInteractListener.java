@@ -107,11 +107,18 @@ public final class MobInteractListener implements Listener {
         if (!(e.getEntity() instanceof LivingEntity src)) return;
         String reason = e.getTransformReason().name();
         long count = StackCount.get(src);
-        if (src.isDead() || src.getPersistentDataContainer().has(MobDeathListener.DYING, PersistentDataType.BYTE)) {
-            // e.g. INFECTION: the villager died first and MobDeathListener already spawned the count-1
-            // replacement; only the converted body must not carry the stack's count or label
+        var srcPdc = src.getPersistentDataContainer();
+        if (src.isDead() || srcPdc.has(MobDeathListener.DYING, PersistentDataType.BYTE)) {
+            // e.g. INFECTION: the villager died first and MobDeathListener normally already spawned the
+            // count-1 replacement; only the converted body must not carry the stack's count or label
             if (count > 1) {
                 Component lbl = src.customName();
+                if (!srcPdc.has(MobDeathListener.DYING, PersistentDataType.BYTE)) {
+                    // the death listener did not run (no EntityDeathEvent): keep the rest of the stack here
+                    srcPdc.set(MobDeathListener.DYING, PersistentDataType.BYTE, (byte) 1);
+                    var max = src.getAttribute(Attribute.MAX_HEALTH);
+                    MobDeathListener.spawnReplacement(src, count - 1, max == null ? 20.0 : max.getValue());
+                }
                 for (Entity t : e.getTransformedEntities()) clearStackData(t, lbl);
             }
             return;
@@ -127,6 +134,8 @@ public final class MobInteractListener implements Listener {
         resetConversion(rest);
         if (reason.equals("LIGHTNING")) immunize(rest.getUniqueId());
         StackCount.set(src, 1); // also drops the xN label, so the new entity does not inherit it
+        // until the fold-back below, the sweep must not merge src into rest (that would be N+1)
+        srcPdc.set(MobDeathListener.DYING, PersistentDataType.BYTE, (byte) 1);
         for (Entity t : e.getTransformedEntities()) clearStackData(t, srcLabel);
         Bukkit.getScheduler().runTask(plugin, () -> {
             // a transform that keeps its source would leave one extra old-kind member: fold it back
@@ -199,6 +208,7 @@ public final class MobInteractListener implements Listener {
         pdc.remove(Keys.LABEL);
         pdc.remove(Keys.COUNT);
         pdc.remove(BABY);
+        pdc.remove(MobDeathListener.DYING);
     }
 
     // ---- rule 6: baby -> adult (no grow event in Paper 26.3; checked from the chunk sweep) ----
