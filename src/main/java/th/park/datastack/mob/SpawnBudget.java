@@ -18,4 +18,34 @@ public final class SpawnBudget {
     public static boolean despawnKeepsRest(double nearestPlayerDistSq, double hardRange, boolean peacefulPurge) {
         return !peacefulPurge && nearestPlayerDistSq <= hardRange * hardRange;
     }
+
+    public static final double DEFAULT_HARD_RANGE = 128.0;
+
+    /** Vanilla's mob cap skips mobs that never despawn (name-tagged, picked up items, persistent). */
+    public static boolean countsForCap(boolean removeWhenFarAway) {
+        return removeWhenFarAway;
+    }
+
+    /** Paper world-config key under entities.spawning.despawn-ranges for a Bukkit SpawnCategory name. */
+    public static String paperCategoryKey(String bukkitCategory) {
+        return switch (bukkitCategory) {
+            case "MONSTER" -> "monster";
+            case "ANIMAL" -> "creature";
+            case "AMBIENT" -> "ambient";
+            case "AXOLOTL" -> "axolotls";
+            case "WATER_ANIMAL" -> "water_creature";
+            case "WATER_AMBIENT" -> "water_ambient";
+            case "WATER_UNDERGROUND_CREATURE" -> "underground_water_creature";
+            default -> "misc";
+        };
+    }
+
+    /** A configured hard range: a positive number is used, anything else ("default", missing) means 128. */
+    public static double hardRange(Object configured) {
+        if (configured instanceof Number n && n.doubleValue() > 0) return n.doubleValue();
+        if (configured instanceof String str) {
+            try { double d = Double.parseDouble(str.trim()); if (d > 0) return d; } catch (NumberFormatException ignored) {}
+        }
+        return DEFAULT_HARD_RANGE;
+    }
 }

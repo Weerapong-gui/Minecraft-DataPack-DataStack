@@ -23,4 +23,18 @@ class SpawnBudgetTest {
         assertFalse(SpawnBudget.despawnKeepsRest(Double.POSITIVE_INFINITY, hard, false)); // no player
         assertFalse(SpawnBudget.despawnKeepsRest(10, hard, true));          // peaceful purge
     }
+    @Test void persistentMobsDoNotCountForCap() {
+        assertTrue(SpawnBudget.countsForCap(true));
+        assertFalse(SpawnBudget.countsForCap(false));
+    }
+    @Test void hardRangeFromConfig() {
+        assertEquals(128.0, SpawnBudget.hardRange("default"));
+        assertEquals(128.0, SpawnBudget.hardRange(null));
+        assertEquals(96.0, SpawnBudget.hardRange(96));
+        assertEquals(64.0, SpawnBudget.hardRange("64"));
+        assertEquals(128.0, SpawnBudget.hardRange(-1));
+        assertEquals("monster", SpawnBudget.paperCategoryKey("MONSTER"));
+        assertEquals("creature", SpawnBudget.paperCategoryKey("ANIMAL"));
+        assertEquals("underground_water_creature", SpawnBudget.paperCategoryKey("WATER_UNDERGROUND_CREATURE"));
+    }
 }

@@ -1,6 +1,7 @@
 package th.park.datastack.mob;
 
 import com.destroystokyo.paper.event.entity.PreCreatureSpawnEvent;
+import java.io.File;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
@@ -10,6 +11,7 @@ import org.bukkit.Difficulty;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Enemy;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -72,11 +74,35 @@ public final class SpawnCapListener implements Listener {
         if (c != null && now - c.tick < CACHE_TICKS) return c.sums;
         Map<SpawnCategory, Long> sums = new EnumMap<>(SpawnCategory.class);
         for (LivingEntity le : p.getWorld().getNearbyLivingEntities(p.getLocation(), RANGE)) {
-            if (le instanceof Player) continue;
+            if (le instanceof Player || !SpawnBudget.countsForCap(le.getRemoveWhenFarAway())) continue;
             sums.merge(le.getSpawnCategory(), StackCount.get(le), Long::sum);
         }
         cache.put(p.getUniqueId(), new Cache(now, sums));
         return sums;
+    }
+
+    // ---- hard despawn range from Paper's world config (entities.spawning.despawn-ranges.<cat>.hard) ----
+
+    private final Map<String, Map<SpawnCategory, Double>> hardRanges = new HashMap<>();
+
+    private double hardRange(World w, SpawnCategory cat) {
+        return hardRanges.computeIfAbsent(w.getName(), n -> new EnumMap<>(SpawnCategory.class))
+            .computeIfAbsent(cat, c -> readHardRange(w, c));
+    }
+
+    /** World file overrides the defaults file; "default", missing or unreadable means 128. Read once per world+category. */
+    private static double readHardRange(World w, SpawnCategory cat) {
+        String path = "entities.spawning.despawn-ranges." + SpawnBudget.paperCategoryKey(cat.name()) + ".hard";
+        Object v = null;
+        try {
+            File world = new File(w.getWorldFolder(), "paper-world.yml");
+            if (world.isFile()) v = YamlConfiguration.loadConfiguration(world).get(path);
+            if (v == null || "default".equals(v)) {
+                File defs = new File(Bukkit.getWorldContainer(), "config/paper-world-defaults.yml");
+                if (defs.isFile()) v = YamlConfiguration.loadConfiguration(defs).get(path);
+            }
+        } catch (RuntimeException ignored) {}
+        return SpawnBudget.hardRange(v);
     }
 
     @EventHandler public void onQuit(PlayerQuitEvent e) { cache.remove(e.getPlayer().getUniqueId()); }
@@ -96,7 +122,7 @@ public final class SpawnCapListener implements Listener {
             if (p.getGameMode() == GameMode.SPECTATOR) continue;
             best = Math.min(best, p.getLocation().distanceSquared(le.getLocation()));
         }
-        if (!SpawnBudget.despawnKeepsRest(best, RANGE, peaceful)) return;
+        if (!SpawnBudget.despawnKeepsRest(best, hardRange(w, le.getSpawnCategory()), peaceful)) return;
         // no gear, no rider, no leash (and no lead drop); fresh entity => vanilla's 30 s idle timer restarts
         MobInteractListener.splitCopy(le, count - 1);
     }
