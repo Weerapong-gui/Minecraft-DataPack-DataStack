@@ -26,6 +26,7 @@ public final class DataStack extends JavaPlugin {
             getConfig().getInt("max-mob-stack", 100),
             getConfig().getInt("max-item-stack", 10000));
         getServer().getPluginManager().registerEvents(new MobDeathListener(), this);
+        getServer().getPluginManager().registerEvents(new th.park.datastack.mob.MobMerger(this), this);
     }
 
     /** Op-only debug: /datastack set <n> [selector] | /datastack info [selector]. */
@@ -61,7 +62,7 @@ public final class DataStack extends JavaPlugin {
         return true;
     }
 
-    @Override public void onDisable() { instance = null; }
+    @Override public void onDisable() { th.park.datastack.mob.MobMerger.clear(); instance = null; }
 
     public Config cfg() { return cfg; }
 
