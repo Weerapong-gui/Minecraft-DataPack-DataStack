@@ -98,7 +98,10 @@ public final class MobMerger implements Listener {
             if (w == null || !w.isChunkLoaded((int) c[1], (int) c[2])) continue;
             Chunk ch = w.getChunkAt((int) c[1], (int) c[2]);
             for (Entity en : ch.getEntities())
-                if (en instanceof Mob m && m.isValid()) tryMerge(m);
+                if (en instanceof Mob m && m.isValid()) {
+                    MobInteractListener.checkGrowth(m);
+                    if (m.isValid()) tryMerge(m);
+                }
         }
     }
 
