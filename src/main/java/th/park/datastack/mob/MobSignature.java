@@ -33,6 +33,11 @@ public final class MobSignature {
             if (it != null && !it.isEmpty()) return false;
         }
         if (e.getPersistentDataContainer().has(MobDeathListener.DYING, PersistentDataType.BYTE)) return false;
+        // trades and reputation would be lost on absorb
+        if (e instanceof AbstractVillager av && av.getRecipeCount() > 0) return false;
+        if (e instanceof Villager v && v.getVillagerExperience() > 0) return false;
+        // raid / patrol members: absorbing them breaks raid wave tracking
+        if (e instanceof Raider rd && (rd.getRaid() != null || rd.isPatrolLeader())) return false;
         if (e.isLeashed() || e.isInsideVehicle() || !e.getPassengers().isEmpty()) return false;
         return StackCount.get(e) < DataStack.get().cfg().maxMobStack();
     }
