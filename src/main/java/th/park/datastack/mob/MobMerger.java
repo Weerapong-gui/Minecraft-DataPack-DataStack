@@ -35,6 +35,13 @@ public final class MobMerger implements Listener {
     private int pendingIdx;
     /** Signatures computed during one sweep tick (null outside a sweep): each mob's at most once. */
     private static Map<LivingEntity, String> sigCache;
+    /** Eligibility seen during one sweep tick; the chosen target is always re-checked live. */
+    private static Map<LivingEntity, Boolean> eligCache;
+    /** Line-of-sight results during one sweep tick, keyed by the (symmetric) entity-id pair. */
+    private static Map<Long, Boolean> losCache;
+    /** A full pass over the loaded chunks starts at most this often (spawn/load hooks merge at once). */
+    private static final int MIN_PASS_TICKS = 40;
+    private int ticksSinceRefill = MIN_PASS_TICKS;
 
     public MobMerger(Plugin plugin) {
         this.plugin = plugin;
@@ -75,6 +82,18 @@ public final class MobMerger implements Listener {
         return sigCache.computeIfAbsent(e, MobSignature::of);
     }
 
+    private static boolean eligible(LivingEntity m) {
+        if (eligCache == null) return MobSignature.eligible(m);
+        return eligCache.computeIfAbsent(m, MobSignature::eligible);
+    }
+
+    private static boolean sees(LivingEntity a, LivingEntity b) {
+        if (losCache == null) return a.hasLineOfSight(b);
+        int x = a.getEntityId(), y = b.getEntityId();
+        long key = ((long) Math.min(x, y) << 32) | (Math.max(x, y) & 0xffffffffL);
+        return losCache.computeIfAbsent(key, k -> a.hasLineOfSight(b));
+    }
+
     private static LivingEntity nearest(LivingEntity e) {
         double r = DataStack.get().cfg().mobRadius();
         var type = e.getType();
@@ -85,14 +104,14 @@ public final class MobMerger implements Listener {
         for (Mob m : e.getWorld().getNearbyEntitiesByType(Mob.class, loc, r)) {
             if (m == e || m.getType() != type) continue; // cheap reject before any signature
             double d = m.getLocation().distanceSquared(loc);
-            if (d >= bestD || !MobSignature.eligible(m)) continue;
+            if (d >= bestD || !m.isValid() || !eligible(m)) continue;
             if (sig == null) sig = sig(e);
             if (!sig.equals(sig(m))) continue;
-            if (!e.hasLineOfSight(m)) continue; // no merging through walls
+            if (!sees(e, m)) continue; // no merging through walls
             bestD = d;
             best = m;
         }
-        return best;
+        return best == null || eligCache == null || MobSignature.eligible(best) ? best : null;
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -110,14 +129,21 @@ public final class MobMerger implements Listener {
     }
 
     private void sweepTick() {
+        ticksSinceRefill++;
         sigCache = new IdentityHashMap<>();
+        eligCache = new IdentityHashMap<>();
+        losCache = new java.util.HashMap<>();
         try {
             int budget = MOBS_PER_TICK, chunks = 0;
             while (budget > 0) {
                 if (pendingIdx >= pending.length) {
                     // load the next chunk; bound empty-chunk skipping too
                     if (++chunks > 64) break;
-                    if (queue.isEmpty()) refill();
+                    if (queue.isEmpty()) {
+                        if (ticksSinceRefill < MIN_PASS_TICKS) break;
+                        refill();
+                        ticksSinceRefill = 0;
+                    }
                     if (queue.isEmpty()) break;
                     long[] c = queue.poll();
                     World w = Bukkit.getWorlds().size() > c[0] ? Bukkit.getWorlds().get((int) c[0]) : null;
@@ -135,6 +161,8 @@ public final class MobMerger implements Listener {
             }
         } finally {
             sigCache = null;
+            eligCache = null;
+            losCache = null;
         }
     }
 
