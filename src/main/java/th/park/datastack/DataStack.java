@@ -28,6 +28,7 @@ public final class DataStack extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new MobDeathListener(), this);
         getServer().getPluginManager().registerEvents(new th.park.datastack.mob.MobMerger(this), this);
         getServer().getPluginManager().registerEvents(new th.park.datastack.mob.MobInteractListener(this), this);
+        getServer().getPluginManager().registerEvents(new th.park.datastack.mob.SpawnCapListener(), this);
     }
 
     /** Op-only debug: /datastack set <n> [selector] | /datastack info [selector]. */
