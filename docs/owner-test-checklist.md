@@ -37,3 +37,11 @@ Use survival on the test server (`/test`). Restore afterwards: `doMobSpawning`, 
 - [ ] Stand on the stack while a hopper below drains it: inventory + hopper + chest + ground = 500.
 - [ ] Allay/fox near an `x500` stack does not take it; a normal <=64 stack behaves as vanilla.
 - [ ] Throw the stack in lava: it disappears completely.
+
+## Final review fixes
+- [ ] Hit an x20 zombie stack once with a Fire Aspect sword (or a Flame arrow) and let it burn: only one dies (one loot, one XP); count goes to x19.
+- [ ] Sunlight/lava burning an x20 stack with no attacker still kills the whole stack.
+- [ ] `/difficulty hard`, zombie converts a villager from an x5 villager stack: villagers + zombie villagers = 5.
+- [ ] Start a raid near a village: raid mobs (and patrol captains) do not stack.
+- [ ] Villagers you have traded with (or that have trades) stay separate; unemployed ones still stack.
+- [ ] Two cow pens side by side separated by a wall: the groups do not merge through the wall.
