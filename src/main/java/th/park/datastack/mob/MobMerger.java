@@ -1,6 +1,8 @@
 package th.park.datastack.mob;
 
 import java.util.ArrayDeque;
+import java.util.IdentityHashMap;
+import java.util.Map;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.World;
@@ -18,16 +20,21 @@ import th.park.datastack.StackCount;
 
 /**
  * Merges nearby same-kind mobs. Triggered by spawns (1 tick later), entity loads,
- * and a cheap sweep that visits at most {@link #CHUNKS_PER_TICK} loaded chunks per tick.
+ * and a cheap sweep that visits at most {@link #MOBS_PER_TICK} mobs per tick (resuming mid-chunk).
  */
 public final class MobMerger implements Listener {
-    private static final int CHUNKS_PER_TICK = 2;
+    private static final int MOBS_PER_TICK = 64;
     /** Bound on merges per tryMerge call, so one call stays cheap. */
     private static final int MAX_ROUNDS = 8;
 
     private static MobMerger instance;
     private final Plugin plugin;
     private final ArrayDeque<long[]> queue = new ArrayDeque<>(); // {worldIndex, chunkX, chunkZ}
+    /** Mobs of the chunk being swept and the next one to visit. */
+    private Entity[] pending = new Entity[0];
+    private int pendingIdx;
+    /** Signatures computed during one sweep tick (null outside a sweep): each mob's at most once. */
+    private static Map<LivingEntity, String> sigCache;
 
     public MobMerger(Plugin plugin) {
         this.plugin = plugin;
@@ -63,15 +70,27 @@ public final class MobMerger implements Listener {
         return cur != null && cur.isValid() ? cur : null;
     }
 
+    private static String sig(LivingEntity e) {
+        if (sigCache == null) return MobSignature.of(e);
+        return sigCache.computeIfAbsent(e, MobSignature::of);
+    }
+
     private static LivingEntity nearest(LivingEntity e) {
         double r = DataStack.get().cfg().mobRadius();
-        String sig = MobSignature.of(e);
+        var type = e.getType();
+        String sig = null;
         LivingEntity best = null;
         double bestD = Double.MAX_VALUE;
-        for (Mob m : e.getWorld().getNearbyEntitiesByType(Mob.class, e.getLocation(), r)) {
-            if (m == e || !MobSignature.eligible(m) || !sig.equals(MobSignature.of(m))) continue;
-            double d = m.getLocation().distanceSquared(e.getLocation());
-            if (d < bestD) { bestD = d; best = m; }
+        var loc = e.getLocation();
+        for (Mob m : e.getWorld().getNearbyEntitiesByType(Mob.class, loc, r)) {
+            if (m == e || m.getType() != type) continue; // cheap reject before any signature
+            double d = m.getLocation().distanceSquared(loc);
+            if (d >= bestD || !MobSignature.eligible(m)) continue;
+            if (sig == null) sig = sig(e);
+            if (!sig.equals(sig(m))) continue;
+            if (!e.hasLineOfSight(m)) continue; // no merging through walls
+            bestD = d;
+            best = m;
         }
         return best;
     }
@@ -91,17 +110,31 @@ public final class MobMerger implements Listener {
     }
 
     private void sweepTick() {
-        if (queue.isEmpty()) refill();
-        for (int i = 0; i < CHUNKS_PER_TICK && !queue.isEmpty(); i++) {
-            long[] c = queue.poll();
-            World w = Bukkit.getWorlds().size() > c[0] ? Bukkit.getWorlds().get((int) c[0]) : null;
-            if (w == null || !w.isChunkLoaded((int) c[1], (int) c[2])) continue;
-            Chunk ch = w.getChunkAt((int) c[1], (int) c[2]);
-            for (Entity en : ch.getEntities())
+        sigCache = new IdentityHashMap<>();
+        try {
+            int budget = MOBS_PER_TICK, chunks = 0;
+            while (budget > 0) {
+                if (pendingIdx >= pending.length) {
+                    // load the next chunk; bound empty-chunk skipping too
+                    if (++chunks > 64) break;
+                    if (queue.isEmpty()) refill();
+                    if (queue.isEmpty()) break;
+                    long[] c = queue.poll();
+                    World w = Bukkit.getWorlds().size() > c[0] ? Bukkit.getWorlds().get((int) c[0]) : null;
+                    pending = w == null || !w.isChunkLoaded((int) c[1], (int) c[2]) ? new Entity[0]
+                        : w.getChunkAt((int) c[1], (int) c[2]).getEntities();
+                    pendingIdx = 0;
+                    continue;
+                }
+                Entity en = pending[pendingIdx++];
                 if (en instanceof Mob m && m.isValid()) {
+                    budget--;
                     MobInteractListener.checkGrowth(m);
                     if (m.isValid()) tryMerge(m);
                 }
+            }
+        } finally {
+            sigCache = null;
         }
     }
 
