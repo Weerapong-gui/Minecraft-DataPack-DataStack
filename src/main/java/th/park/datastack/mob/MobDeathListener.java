@@ -130,7 +130,14 @@ public final class MobDeathListener implements Listener {
             dead.setLeashHolder(null);
             dead.getWorld().dropItemNaturally(dead.getLocation(), new ItemStack(org.bukkit.Material.LEAD));
         }
-        Entity copy = dead.copy(dead.getLocation());
+        // copy unspawned and fix health first: a copy spawned with the dead mob's 0 health makes
+        // clients start the death animation, which leaves the whole stack tinted red for good
+        Entity copy = dead.copy();
+        if (copy instanceof LivingEntity pre) {
+            pre.setHealth(Math.max(1.0, Math.min(maxHealth(pre), health)));
+            pre.getPersistentDataContainer().remove(DYING);
+            if (!copy.spawnAt(dead.getLocation())) copy = null;
+        }
         if (!(copy instanceof LivingEntity r)) {
             if (copy != null) copy.remove();
             org.bukkit.Bukkit.getLogger().warning("[DataStack] could not copy " + dead.getType() + " at "
