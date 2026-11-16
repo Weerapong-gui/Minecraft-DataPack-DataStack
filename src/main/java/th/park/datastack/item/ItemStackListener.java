@@ -98,14 +98,14 @@ public final class ItemStackListener implements Listener {
                 if (!other.getItemStack().isSimilar(spawned.getItemStack())) continue;
                 if (best == null || count(other) > count(best)) best = other;
             }
-            if (best != null) merge(spawned, best);
+            if (best == null || !merge(spawned, best)) setCount(spawned, count(spawned)); // label a fresh pile
         });
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onPlayerPickup(PlayerAttemptPickupItemEvent e) {
         Item item = e.getItem();
-        if (!stacked(item)) return; // vanilla is exact for normal stacks
+        if (!stacked(item)) { refreshLater(item); return; } // vanilla is exact for normal stacks
         e.setCancelled(true);
         Player p = e.getPlayer();
         if (item.getPickupDelay() > 0) return;
@@ -128,6 +128,13 @@ public final class ItemStackListener implements Listener {
         setCount(item, count - given);
     }
 
+    /** Vanilla may take part of a small pile; relabel from its new amount once it has. */
+    private void refreshLater(Item item) {
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (item.isValid()) setCount(item, item.getItemStack().getAmount());
+        });
+    }
+
     /** Adds n copies in stack-sized chunks; returns how many actually went in (leftovers never vanish). */
     private static long give(Inventory inv, ItemStack proto, long n, int max) {
         long given = 0;
@@ -148,13 +155,14 @@ public final class ItemStackListener implements Listener {
     public void onEntityPickup(EntityPickupItemEvent e) {
         if (e.getEntity() instanceof Player) return; // handled via PlayerAttemptPickupItemEvent
         if (stacked(e.getItem())) e.setCancelled(true);
+        else refreshLater(e.getItem());
     }
 
     /** Hoppers / hopper minecarts: one stack's worth per transfer, never more than exists. */
     @EventHandler(ignoreCancelled = true)
     public void onHopperPickup(InventoryPickupItemEvent e) {
         Item item = e.getItem();
-        if (!stacked(item)) return;
+        if (!stacked(item)) { refreshLater(item); return; }
         e.setCancelled(true);
         Inventory inv = e.getInventory();
         ItemStack proto = item.getItemStack();

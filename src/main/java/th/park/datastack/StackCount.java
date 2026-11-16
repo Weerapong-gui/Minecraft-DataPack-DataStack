@@ -1,9 +1,10 @@
 package th.park.datastack;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.Item;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
@@ -33,12 +34,12 @@ public final class StackCount {
             : PlainTextComponentSerializer.plainText().serialize(e.customName());
         boolean ours = marked && Labels.isOurs(plain);
         if (marked && !ours) pdc.remove(Keys.LABEL); // renamed by a player: name is theirs now
-        int threshold = e instanceof Item item ? item.getItemStack().getMaxStackSize() : 1;
+        int threshold = 1; // items and mobs: any count above one shows xN
         String text = Labels.text(count, threshold);
         if (text != null) {
             // do not overwrite a player-given name
             if (e.customName() != null && !ours) return;
-            e.customName(Component.text(text));
+            e.customName(Component.text(text, NamedTextColor.YELLOW, TextDecoration.BOLD));
             e.setCustomNameVisible(true);
             pdc.set(Keys.LABEL, PersistentDataType.BYTE, (byte) 1);
         } else if (ours) {
