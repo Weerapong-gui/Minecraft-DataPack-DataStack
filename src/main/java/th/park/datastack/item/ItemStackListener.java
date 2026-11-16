@@ -86,8 +86,8 @@ public final class ItemStackListener implements Listener {
     }
 
     /**
-     * A new item looks for the biggest identical pile within pull-radius; the smaller of the two flies
-     * into the bigger one and merges on arrival (also covers full stacks, which vanilla never merges).
+     * A new item looks for the biggest identical pile within pull-radius; the bigger of the two flies
+     * into the smaller one and merges on arrival (also covers full stacks, which vanilla never merges).
      */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onSpawn(ItemSpawnEvent e) {
@@ -105,28 +105,28 @@ public final class ItemStackListener implements Listener {
                 setCount(spawned, count(spawned)); // label a fresh pile
                 return;
             }
-            if (count(spawned) > count(best)) pull(best, spawned);
-            else pull(spawned, best);
+            if (count(spawned) > count(best)) pull(spawned, best);
+            else pull(best, spawned);
         });
     }
 
     private static final int PULL_TICKS = 40;
     private static final double PULL_SPEED = 0.35, ARRIVE = 0.7;
 
-    /** Steers small toward big each tick, then merges; gives up quietly if either one goes away. */
-    private void pull(Item small, Item big) {
-        small.setPickupDelay(Math.max(small.getPickupDelay(), 10)); // nobody grabs it mid-flight
+    /** Steers the mover toward the target each tick, then merges; gives up quietly if either one goes away. */
+    private void pull(Item mover, Item target) {
+        mover.setPickupDelay(Math.max(mover.getPickupDelay(), 10)); // nobody grabs it mid-flight
         new org.bukkit.scheduler.BukkitRunnable() {
             int t = 0;
             @Override public void run() {
-                if (!small.isValid() || !big.isValid() || small.getWorld() != big.getWorld()) { cancel(); return; }
-                org.bukkit.util.Vector d = big.getLocation().toVector().subtract(small.getLocation().toVector());
+                if (!mover.isValid() || !target.isValid() || mover.getWorld() != target.getWorld()) { cancel(); return; }
+                org.bukkit.util.Vector d = target.getLocation().toVector().subtract(mover.getLocation().toVector());
                 if (d.lengthSquared() < ARRIVE * ARRIVE || ++t >= PULL_TICKS) {
-                    if (!merge(small, big)) setCount(small, count(small));
+                    if (!merge(mover, target)) setCount(mover, count(mover));
                     cancel();
                     return;
                 }
-                small.setVelocity(d.normalize().multiply(PULL_SPEED).add(new org.bukkit.util.Vector(0, 0.04, 0)));
+                mover.setVelocity(d.normalize().multiply(PULL_SPEED).add(new org.bukkit.util.Vector(0, 0.04, 0)));
             }
         }.runTaskTimer(plugin, 0L, 1L);
     }
