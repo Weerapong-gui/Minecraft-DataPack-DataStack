@@ -231,6 +231,21 @@ public final class MobInteractListener implements Listener {
         MobMerger.tryMerge(e);
     }
 
+    /** Feeding a stack: the fed one leaves as a single animal in love; the rest stay stacked, not in love. */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onLove(org.bukkit.event.entity.EntityEnterLoveModeEvent e) {
+        org.bukkit.entity.Animals fed = e.getEntity();
+        long n = StackCount.get(fed);
+        if (n <= 1) return;
+        LivingEntity rest = splitCopy(fed, n - 1);
+        if (rest == null) return;
+        ((org.bukkit.entity.Animals) rest).setLoveModeTicks(0);
+        StackCount.set(fed, 1);
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            if (rest.isValid()) ((org.bukkit.entity.Animals) rest).setLoveModeTicks(0);
+        });
+    }
+
     /**
      * A copy of a living stack holding {@code count} members: same type and data and health,
      * no equipment (zero drop chances), no riders, no vehicle, no leash. Source is untouched.

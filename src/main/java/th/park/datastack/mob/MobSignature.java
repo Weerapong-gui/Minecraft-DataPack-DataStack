@@ -38,6 +38,8 @@ public final class MobSignature {
         if (e instanceof Villager v && v.getVillagerExperience() > 0) return false;
         // raid / patrol members: absorbing them breaks raid wave tracking
         if (e instanceof Raider rd && (rd.getRaid() != null || rd.isPatrolLeader())) return false;
+        // fed / just bred animals stay single until love mode and the breeding cooldown are over
+        if (e instanceof org.bukkit.entity.Animals an && (an.isLoveMode() || (an.isAdult() && an.getAge() > 0))) return false;
         if (e.isLeashed() || e.isInsideVehicle() || !e.getPassengers().isEmpty()) return false;
         return StackCount.get(e) < DataStack.get().cfg().maxMobStack();
     }
