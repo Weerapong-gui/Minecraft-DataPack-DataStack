@@ -9,4 +9,6 @@ public final class Keys {
     public static final NamespacedKey COUNT = new NamespacedKey("datastack", "count");
     /** Marks that the entity's custom name is a plugin-owned xN label (byte 1). */
     public static final NamespacedKey LABEL = new NamespacedKey("datastack", "label");
+    /** The exact plain text of the label the plugin last wrote (string), to tell it from player names. */
+    public static final NamespacedKey LABEL_TEXT = new NamespacedKey("datastack", "label_text");
 }

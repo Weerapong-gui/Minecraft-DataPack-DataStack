@@ -33,8 +33,11 @@ public final class StackCount {
         if (e.customName() == null) return false;
         if (e instanceof org.bukkit.entity.Item) return true; // dropped items cannot be renamed in the world
         String plain = PlainTextComponentSerializer.plainText().serialize(e.customName());
-        return Labels.isOurs(plain) || plain.equals(e.getType().translationKey())
-            || plain.startsWith(e.getType().translationKey() + " x");
+        String wrote = e.getPersistentDataContainer().get(Keys.LABEL_TEXT, PersistentDataType.STRING);
+        if (wrote != null) return wrote.equals(plain);
+        // labels from older versions: "xN", "<Type>" or "<Type> xN"
+        String type = PlainTextComponentSerializer.plainText().serialize(Component.translatable(e.getType().translationKey()));
+        return Labels.isOurs(plain) || plain.equals(type) || (plain.startsWith(type + " ") && Labels.isOurs(plain.substring(type.length() + 1)));
     }
 
     private static void refreshLabel(Entity e, long count) {
@@ -42,15 +45,18 @@ public final class StackCount {
         boolean ours = hasOurLabel(e);
         if (!ours) {
             pdc.remove(Keys.LABEL);
+            pdc.remove(Keys.LABEL_TEXT);
             if (e.customName() != null) return; // a player-given name is never overwritten
         }
         Component name = e instanceof org.bukkit.entity.Item item ? item.getItemStack().effectiveName()
             : Component.translatable(e.getType().translationKey());
         var label = Component.text().append(name.colorIfAbsent(NamedTextColor.WHITE).decorate(TextDecoration.BOLD));
         if (count > 1) label.append(Component.text(" x" + count, NamedTextColor.YELLOW, TextDecoration.BOLD));
-        e.customName(label.build());
+        Component built = label.build();
+        e.customName(built);
         e.setCustomNameVisible(true);
         pdc.set(Keys.LABEL, PersistentDataType.BYTE, (byte) 1);
+        pdc.set(Keys.LABEL_TEXT, PersistentDataType.STRING, PlainTextComponentSerializer.plainText().serialize(built));
     }
 
     /** Labels a single mob or item that has never been labelled, and rewrites old-format labels. */
