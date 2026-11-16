@@ -21,5 +21,9 @@ class LabelsTest {
         assertFalse(Labels.isOurs("x"));
         assertFalse(Labels.isOurs("x12a"));
         assertFalse(Labels.isOurs(null));
+        assertTrue(Labels.isOurs("entity.minecraft.cow x12"));
+        assertTrue(Labels.isOurs("Dirt x45"));
+        assertFalse(Labels.isOurs("Bob x"));
+        assertFalse(Labels.isOurs("Bobx12"));
     }
 }

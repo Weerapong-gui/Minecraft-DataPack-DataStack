@@ -124,6 +124,7 @@ public final class MobMerger implements Listener {
     public void onLoad(EntitiesLoadEvent ev) {
         var list = ev.getEntities();
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            for (Entity en : list) if (en.isValid()) th.park.datastack.StackCount.relabel(en);
             for (Entity en : list) if (en instanceof LivingEntity le && le.isValid()) tryMerge(le);
         }, 1L);
     }
