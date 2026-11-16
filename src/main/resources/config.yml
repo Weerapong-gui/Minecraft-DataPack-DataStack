@@ -2,5 +2,5 @@ mob-radius: 5.0
 item-radius: 2.5
 # the bigger pile flies to a smaller one within this distance
 pull-radius: 4.0
-max-mob-stack: 100
+max-mob-stack: 10000
 max-item-stack: 10000
