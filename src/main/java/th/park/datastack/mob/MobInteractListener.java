@@ -63,6 +63,7 @@ public final class MobInteractListener implements Listener {
         if (tag == null || tag.getType() != Material.NAME_TAG) return;
         Component name = tag.hasItemMeta() ? tag.getItemMeta().customName() : null;
         long count = StackCount.get(stack);
+        if (name != null && count <= 1) stack.getPersistentDataContainer().remove(Keys.LABEL); // vanilla renames it
         if (!InteractPolicy.nameTagSplits(count, name != null)) return;
         e.setCancelled(true);
         LivingEntity one = splitCopy(stack, 1);

@@ -23,8 +23,7 @@ public final class MobSignature {
         if (e instanceof Tameable t && t.isTamed()) return false;
         // a custom name without our label marker is a player-given name
         // a custom name that is not our xN label (or lacks our marker) is a player-given name
-        if (e.customName() != null && (!e.getPersistentDataContainer().has(Keys.LABEL, PersistentDataType.BYTE)
-            || !Labels.isOurs(PlainTextComponentSerializer.plainText().serialize(e.customName())))) return false;
+        if (e.customName() != null && !StackCount.hasOurLabel(e)) return false;
         // any gear (incl. picked-up player items, captain banners) would vanish or dupe on absorb
         EntityEquipment eq = e.getEquipment();
         if (eq != null) for (EquipmentSlot slot : EquipmentSlot.values()) {

@@ -117,7 +117,11 @@ public final class MobMerger implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onSpawn(CreatureSpawnEvent ev) {
         LivingEntity le = ev.getEntity();
-        Bukkit.getScheduler().runTaskLater(plugin, () -> { if (le.isValid()) tryMerge(le); }, 1L);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (!le.isValid()) return;
+            th.park.datastack.StackCount.relabel(le);
+            tryMerge(le);
+        }, 1L);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

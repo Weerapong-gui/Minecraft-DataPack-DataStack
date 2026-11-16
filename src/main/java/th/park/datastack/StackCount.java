@@ -27,35 +27,38 @@ public final class StackCount {
         refreshLabel(e, count);
     }
 
-    private static void refreshLabel(Entity e, long count) {
-        PersistentDataContainer pdc = e.getPersistentDataContainer();
-        boolean marked = pdc.has(Keys.LABEL, PersistentDataType.BYTE);
-        String plain = e.customName() == null ? null
-            : PlainTextComponentSerializer.plainText().serialize(e.customName());
-        boolean ours = marked && Labels.isOurs(plain);
-        if (marked && !ours) pdc.remove(Keys.LABEL); // renamed by a player: name is theirs now
-        int threshold = 1; // items and mobs: any count above one shows xN
-        String text = Labels.text(count, threshold);
-        if (text != null) {
-            // do not overwrite a player-given name
-            if (e.customName() != null && !ours) return;
-            Component name = e instanceof org.bukkit.entity.Item item ? item.getItemStack().effectiveName()
-                : Component.translatable(e.getType().translationKey());
-            e.customName(Component.text().append(name.colorIfAbsent(NamedTextColor.WHITE))
-                .append(Component.text(" " + text, NamedTextColor.YELLOW, TextDecoration.BOLD)).build());
-            e.setCustomNameVisible(true);
-            pdc.set(Keys.LABEL, PersistentDataType.BYTE, (byte) 1);
-        } else if (ours) {
-            e.customName(null);
-            e.setCustomNameVisible(false);
-            pdc.remove(Keys.LABEL);
-        }
+    /** True if the entity's current name is a label this plugin wrote (not a player-given name). */
+    public static boolean hasOurLabel(Entity e) {
+        if (!e.getPersistentDataContainer().has(Keys.LABEL, PersistentDataType.BYTE)) return false;
+        if (e.customName() == null) return false;
+        if (e instanceof org.bukkit.entity.Item) return true; // dropped items cannot be renamed in the world
+        String plain = PlainTextComponentSerializer.plainText().serialize(e.customName());
+        return Labels.isOurs(plain) || plain.equals(e.getType().translationKey())
+            || plain.startsWith(e.getType().translationKey() + " x");
     }
 
-    /** Rewrites an existing plugin label in the current format (labels made by older versions). */
+    private static void refreshLabel(Entity e, long count) {
+        PersistentDataContainer pdc = e.getPersistentDataContainer();
+        boolean ours = hasOurLabel(e);
+        if (!ours) {
+            pdc.remove(Keys.LABEL);
+            if (e.customName() != null) return; // a player-given name is never overwritten
+        }
+        Component name = e instanceof org.bukkit.entity.Item item ? item.getItemStack().effectiveName()
+            : Component.translatable(e.getType().translationKey());
+        var label = Component.text().append(name.colorIfAbsent(NamedTextColor.WHITE).decorate(TextDecoration.BOLD));
+        if (count > 1) label.append(Component.text(" x" + count, NamedTextColor.YELLOW, TextDecoration.BOLD));
+        e.customName(label.build());
+        e.setCustomNameVisible(true);
+        pdc.set(Keys.LABEL, PersistentDataType.BYTE, (byte) 1);
+    }
+
+    /** Labels a single mob or item that has never been labelled, and rewrites old-format labels. */
     public static void relabel(Entity e) {
-        if (!e.getPersistentDataContainer().has(Keys.LABEL, PersistentDataType.BYTE)) return;
-        if (e instanceof org.bukkit.entity.Item item) th.park.datastack.item.ItemStackListener.setCount(item, th.park.datastack.item.ItemStackListener.count(item));
-        else set(e, get(e));
+        if (e instanceof org.bukkit.entity.Item item) {
+            th.park.datastack.item.ItemStackListener.setCount(item, th.park.datastack.item.ItemStackListener.count(item));
+        } else if (e instanceof org.bukkit.entity.Mob && (e.customName() == null || hasOurLabel(e))) {
+            set(e, get(e));
+        }
     }
 }
