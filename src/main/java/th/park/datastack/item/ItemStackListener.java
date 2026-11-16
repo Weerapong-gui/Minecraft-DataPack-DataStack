@@ -111,7 +111,7 @@ public final class ItemStackListener implements Listener {
     }
 
     private static final int PULL_TICKS = 40;
-    private static final double PULL_SPEED = 0.35, ARRIVE = 0.7;
+    private static final double PULL_SPEED = 0.525, ARRIVE = 0.7;
 
     /** Steers the mover toward the target each tick, then merges; gives up quietly if either one goes away. */
     private void pull(Item mover, Item target) {
