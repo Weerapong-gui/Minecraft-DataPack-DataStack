@@ -16,6 +16,7 @@ total above it as `xN`, allowing far more than 64.
 |---|---|---|
 | `mob-radius` | `5.0` | Blocks within which same-kind mobs merge |
 | `item-radius` | `2.5` | Blocks within which same-kind items merge |
+| `pull-radius` | `4.0` | Blocks within which a smaller item pile flies into a bigger one |
 | `max-mob-stack` | `100` | Maximum mobs per stack |
 | `max-item-stack` | `10000` | Maximum items per stack |
 
