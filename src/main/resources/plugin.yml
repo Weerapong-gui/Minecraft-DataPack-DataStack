@@ -1,0 +1,13 @@
+name: DataStack
+version: 1.0.0
+main: th.park.datastack.DataStack
+api-version: '26.3'
+description: Stack nearby same-kind mobs and dropped items into one entity labelled xN
+commands:
+  datastack:
+    description: DataStack debug commands
+    usage: /datastack set <n> [selector] | /datastack info [selector]
+    permission: datastack.debug
+permissions:
+  datastack.debug:
+    default: op

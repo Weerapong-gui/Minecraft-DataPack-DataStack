@@ -1,8 +1,39 @@
-# DataStack (datapack, Minecraft Java 26.3)
+# DataStack (Paper plugin, Minecraft 26.3)
 
-Work in progress. Goal: merge nearby dropped items and mobs of the same kind
-into one entity and show the total above it as `xN`, allowing far more than 64.
+Merges nearby same-kind mobs and dropped items into one entity and shows the
+total above it as `xN`, allowing far more than 64.
 
-## Install
-Copy this folder (or a zip of it) into `<world>/datapacks/` and run `/reload`.
-Test on the test server first (`/test`).
+## Features
+- Mobs of the same kind and state (age, colour/variant, no gear, not tamed or renamed) merge into one stack with an `xN` label.
+- Killing a stack removes one mob at a time; whole-stack deaths (lava, void, fall) multiply drops and XP by N.
+- Name tags, shearing, milking, breeding, conversions (zombie villager cure, drowning, etc.) act on one mob and leave the rest.
+- Stacks count toward Paper's mob cap (N each), and random despawn shrinks a stack by one instead of removing it.
+- Dropped items merge past 64 up to `max-item-stack`; pickup, hoppers and mob pickup are conserved (no dupes).
+- The label is a normal custom name, so Bedrock (Floodgate) clients should see it too (see the checklist).
+
+## Config (`plugins/DataStack/config.yml`)
+| Key | Default | Meaning |
+|---|---|---|
+| `mob-radius` | `5.0` | Blocks within which same-kind mobs merge |
+| `item-radius` | `2.5` | Blocks within which same-kind items merge |
+| `max-mob-stack` | `100` | Maximum mobs per stack |
+| `max-item-stack` | `10000` | Maximum items per stack |
+
+## Commands (op, permission `datastack.debug`)
+- `/datastack set <n> [selector]` - set a stack's count (minimum 1).
+- `/datastack info [selector]` - print type, UUID, count and health of stacks.
+
+## Build
+Needs a Paper server install for the classpath (no Gradle):
+
+    ./build.sh /path/to/paper-server
+
+`/path/to/paper-server` is the folder containing `libraries/` and `versions/`.
+It runs the unit tests (JUnit console jar is fetched into `lib/` and checksum-verified),
+then writes `build/DataStack.jar`. Drop it in `plugins/`.
+
+## Deploy
+Try it on a test server first, run the [owner checklist](docs/owner-test-checklist.md),
+and only then copy the jar to the live server.
+
+**Before going live:** set `settings.log-named-deaths: false` in `spigot.yml`. The `xN` label is a custom name, so otherwise every kill of a stacked mob logs a line to the console.

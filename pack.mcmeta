@@ -1,7 +1,0 @@
-{
-  "pack": {
-    "description": "DataStack - stack nearby items and mobs with an xN counter",
-    "min_format": 121,
-    "max_format": 121
-  }
-}
