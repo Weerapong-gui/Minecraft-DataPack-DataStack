@@ -1,7 +1,8 @@
 name: DataStack
-version: 1.0.0
+version: 1.1.0
 main: th.park.datastack.DataStack
 api-version: '26.3'
+softdepend: [packetevents]
 description: Stack nearby same-kind mobs and dropped items into one entity labelled xN
 commands:
   datastack:

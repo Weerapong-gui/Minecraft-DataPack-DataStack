@@ -19,13 +19,14 @@ total above it as `xN`, allowing far more than 64.
 | `pull-radius` | `4.0` | Blocks within which a bigger item pile flies into a smaller one |
 | `max-mob-stack` | `10000` | Maximum mobs per stack |
 | `max-item-stack` | `10000` | Maximum items per stack |
+| `label-range` | `10.0` | Show `xN` labels only to players within this many blocks (labels draw through walls); `0` = any distance. Needs the PacketEvents plugin, otherwise ignored |
 
 ## Commands (op, permission `datastack.debug`)
 - `/datastack set <n> [selector]` - set a stack's count (minimum 1).
 - `/datastack info [selector]` - print type, UUID, count and health of stacks.
 
 ## Build
-Needs a Paper server install for the classpath (no Gradle):
+Needs a Paper server install for the classpath (no Gradle), with `packetevents*.jar` in its `plugins/`:
 
     ./build.sh /path/to/paper-server
 

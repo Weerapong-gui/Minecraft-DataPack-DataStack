@@ -12,10 +12,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 import th.park.datastack.mob.MobDeathListener;
 
 public final class DataStack extends JavaPlugin {
-    public record Config(double mobRadius, double itemRadius, double pullRadius, int maxMobStack, int maxItemStack) {}
+    public record Config(double mobRadius, double itemRadius, double pullRadius, int maxMobStack, int maxItemStack, double labelRange) {}
 
     private static DataStack instance;
     private Config cfg;
+    private th.park.datastack.label.LabelRange labelRange;
 
     @Override public void onEnable() {
         instance = this;
@@ -25,12 +26,21 @@ public final class DataStack extends JavaPlugin {
             getConfig().getDouble("item-radius", 2.5),
             getConfig().getDouble("pull-radius", 4.0),
             getConfig().getInt("max-mob-stack", 10000),
-            getConfig().getInt("max-item-stack", 10000));
+            getConfig().getInt("max-item-stack", 10000),
+            getConfig().getDouble("label-range", 10.0));
         getServer().getPluginManager().registerEvents(new MobDeathListener(), this);
         getServer().getPluginManager().registerEvents(new th.park.datastack.mob.MobMerger(this), this);
         getServer().getPluginManager().registerEvents(new th.park.datastack.mob.MobInteractListener(this), this);
         getServer().getPluginManager().registerEvents(new th.park.datastack.mob.SpawnCapListener(), this);
         getServer().getPluginManager().registerEvents(new th.park.datastack.item.ItemStackListener(this), this);
+        if (cfg.labelRange() > 0) {
+            if (getServer().getPluginManager().isPluginEnabled("packetevents")) {
+                labelRange = new th.park.datastack.label.LabelRange(cfg.labelRange());
+                labelRange.start(this);
+            } else {
+                getLogger().warning("packetevents not found: label-range ignored, labels show at any distance");
+            }
+        }
         // chunks loaded before enable fire no EntitiesLoadEvent for us
         getServer().getScheduler().runTask(this, () -> {
             for (var w : getServer().getWorlds()) for (var en : w.getEntities()) StackCount.relabel(en);
@@ -70,7 +80,12 @@ public final class DataStack extends JavaPlugin {
         return true;
     }
 
-    @Override public void onDisable() { th.park.datastack.mob.MobMerger.clear(); th.park.datastack.mob.MobInteractListener.clear(); instance = null; }
+    @Override public void onDisable() {
+        if (labelRange != null) { labelRange.stop(); labelRange = null; }
+        th.park.datastack.mob.MobMerger.clear();
+        th.park.datastack.mob.MobInteractListener.clear();
+        instance = null;
+    }
 
     public Config cfg() { return cfg; }
 

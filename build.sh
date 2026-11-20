@@ -5,6 +5,10 @@ set -euo pipefail
 SERVER="${1:?usage: ./build.sh /path/to/paper-server-dir}"
 cd "$(dirname "$0")"
 CP="$(find "$SERVER/libraries" "$SERVER/versions" -name '*.jar' | tr '\n' ':')"
+# packetevents is a soft dependency (label-range); compile against the copy in the server's plugins/
+PE="$(find "$SERVER/plugins" -maxdepth 1 -name 'packetevents*.jar' | head -1)"
+[ -n "$PE" ] || { echo "packetevents jar not found in $SERVER/plugins" >&2; exit 1; }
+CP="$CP:$PE"
 
 JUNIT_VER=1.11.4
 JUNIT=lib/junit-platform-console-standalone-$JUNIT_VER.jar
