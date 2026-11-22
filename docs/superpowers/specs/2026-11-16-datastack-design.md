@@ -68,11 +68,14 @@ optional and not part of this work.
    Owner decided these are **not** environment and kill **one at a time**
    (rule 4): explosions (creeper, TNT), entity cramming, attacks by other
    mobs or iron golems, sweeping-edge hits, thorns.
-7a. **Damage that does not kill is shared by the whole stack** (owner
-   decision). The stack keeps one current health; when the front mob dies,
-   the next one comes in with **that same health**, not full health. So a
-   fall-damage XP farm that leaves mobs at half a heart works for every
-   member of the stack.
+7a. **Environment damage that does not kill is shared by the whole stack**
+   (owner decision, revised 2026-11-22). The stack keeps one shared health
+   that only environment damage lowers (fall, fire, contact, etc.: the rule 7
+   causes). When the front mob dies, the next one comes in with the shared
+   health, full if it was never lowered. Attacks by players or mobs hurt the
+   front mob alone: hitting an x10 down to 1/10 and finishing it brings the
+   next member in at full health. A fall-damage XP farm that leaves mobs at
+   half a heart still works for every member of the stack.
 7b. **Hostile mobs despawn one at a time** (owner decision). Vanilla
    despawn rules (distance from players) apply per member: a despawn removes
    one from the stack (x50 → x49) instead of the whole stack. Stacks must not

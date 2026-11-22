@@ -25,13 +25,16 @@ public final class MobDeathListener implements Listener {
     /** Set on a dying stack member so it is handled once. */
     public static final NamespacedKey DYING = new NamespacedKey("datastack", "dying");
 
-    /** Health of each stacked mob just before the latest damage (spec 7a). */
-    private final Map<UUID, Double> preHitHealth = new HashMap<>();
-
+    /** Environment damage that the front mob survives lowers the whole stack's shared health (spec 7a). */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDamage(EntityDamageEvent e) {
-        if (e.getEntity() instanceof LivingEntity le && StackCount.get(le) > 1)
-            preHitHealth.put(le.getUniqueId(), le.getHealth());
+        if (!(e.getEntity() instanceof LivingEntity le) || StackCount.get(le) <= 1) return;
+        if (e instanceof org.bukkit.event.entity.EntityDamageByEntityEvent) return; // an attack: front mob only
+        Long lit = entityLit.get(le.getUniqueId());
+        boolean attackFire = lit != null && lit >= System.currentTimeMillis();
+        if (DeathPolicy.of(e.getCause().name(), attackFire) != DeathPolicy.Outcome.WHOLE_STACK) return;
+        if (e.getFinalDamage() >= le.getHealth() + le.getAbsorptionAmount()) return; // lethal: whole stack dies anyway
+        StackHealth.lower(le, e.getFinalDamage());
     }
 
     /** Stacks set burning by an entity (not lightning): their fire death is an attack, kills one. */
@@ -49,7 +52,6 @@ public final class MobDeathListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onRemove(com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent e) {
-        preHitHealth.remove(e.getEntity().getUniqueId());
         entityLit.remove(e.getEntity().getUniqueId());
     }
 
@@ -73,13 +75,12 @@ public final class MobDeathListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onDeath(EntityDeathEvent e) {
         LivingEntity dead = e.getEntity();
-        Double before = preHitHealth.remove(dead.getUniqueId());
         long count = StackCount.get(dead);
         if (count <= 1) return;
         var pdc = dead.getPersistentDataContainer();
         if (pdc.has(DYING, PersistentDataType.BYTE)) return;
         pdc.set(DYING, PersistentDataType.BYTE, (byte) 1);
-        if (!wholeStack(dead)) spawnReplacement(dead, count - 1, before == null ? maxHealth(dead) : before);
+        if (!wholeStack(dead)) spawnReplacement(dead, count - 1, StackHealth.next(dead));
     }
 
     private static void multiplyDrops(EntityDeathEvent e, LivingEntity dead, long count) {

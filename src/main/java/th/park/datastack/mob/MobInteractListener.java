@@ -117,8 +117,7 @@ public final class MobInteractListener implements Listener {
                 if (!srcPdc.has(MobDeathListener.DYING, PersistentDataType.BYTE)) {
                     // the death listener did not run (no EntityDeathEvent): keep the rest of the stack here
                     srcPdc.set(MobDeathListener.DYING, PersistentDataType.BYTE, (byte) 1);
-                    var max = src.getAttribute(Attribute.MAX_HEALTH);
-                    MobDeathListener.spawnReplacement(src, count - 1, max == null ? 20.0 : max.getValue());
+                    MobDeathListener.spawnReplacement(src, count - 1, StackHealth.next(src));
                 }
                 for (Entity t : e.getTransformedEntities()) clearStackData(t, lbl);
             }
@@ -248,7 +247,7 @@ public final class MobInteractListener implements Listener {
     }
 
     /**
-     * A copy of a living stack holding {@code count} members: same type and data and health,
+     * A copy of a living stack holding {@code count} members: same type and data, the stack's shared health,
      * no equipment (zero drop chances), no riders, no vehicle, no leash. Source is untouched.
      */
     static LivingEntity splitCopy(LivingEntity src, long count) {
@@ -266,8 +265,8 @@ public final class MobInteractListener implements Listener {
             eq.clear();
             for (EquipmentSlot s : EquipmentSlot.values()) if (r.canUseEquipmentSlot(s)) eq.setDropChance(s, 0f);
         }
-        var max = r.getAttribute(Attribute.MAX_HEALTH);
-        r.setHealth(Math.max(1.0, Math.min(max == null ? 20.0 : max.getValue(), src.getHealth())));
+        // the rest of the stack are waiting members: shared health, not the (maybe wounded) front mob's
+        r.setHealth(StackHealth.next(src));
         StackCount.set(r, count);
         return r;
     }

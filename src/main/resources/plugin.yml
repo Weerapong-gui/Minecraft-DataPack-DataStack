@@ -1,5 +1,5 @@
 name: DataStack
-version: 1.1.0
+version: 1.2.0
 main: th.park.datastack.DataStack
 api-version: '26.3'
 softdepend: [packetevents]

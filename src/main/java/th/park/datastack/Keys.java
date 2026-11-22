@@ -11,4 +11,6 @@ public final class Keys {
     public static final NamespacedKey LABEL = new NamespacedKey("datastack", "label");
     /** The exact plain text of the label the plugin last wrote (string), to tell it from player names. */
     public static final NamespacedKey LABEL_TEXT = new NamespacedKey("datastack", "label_text");
+    /** Shared health of a stack's waiting members (double); only environment damage lowers it. Absent = full. */
+    public static final NamespacedKey STACK_HEALTH = new NamespacedKey("datastack", "stack_health");
 }
