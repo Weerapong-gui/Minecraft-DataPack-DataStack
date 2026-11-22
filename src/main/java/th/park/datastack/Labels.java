@@ -13,4 +13,9 @@ public final class Labels {
     public static boolean isOurs(String plainName) {
         return plainName != null && plainName.matches("(.+ )?x\\d+");
     }
+
+    /** Whether an entity gets a label: dropped items always (their name tells what it is), mobs only as a stack. */
+    public static boolean shown(boolean item, long count) {
+        return item || count > 1;
+    }
 }

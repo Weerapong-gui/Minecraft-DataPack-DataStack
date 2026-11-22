@@ -2,7 +2,7 @@ package th.park.datastack;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextDecoration;
+import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.entity.Entity;
 import org.bukkit.persistence.PersistentDataContainer;
@@ -10,6 +10,8 @@ import org.bukkit.persistence.PersistentDataType;
 
 public final class StackCount {
     private StackCount() {}
+
+    private static final TextColor COUNT_COLOR = TextColor.color(0xE0B84A);
 
     public static long get(Entity e) {
         Long v = e.getPersistentDataContainer().get(Keys.COUNT, PersistentDataType.LONG);
@@ -48,10 +50,21 @@ public final class StackCount {
             pdc.remove(Keys.LABEL_TEXT);
             if (e.customName() != null) return; // a player-given name is never overwritten
         }
+        if (!Labels.shown(e instanceof org.bukkit.entity.Item, count)) {
+            // a lone mob carries no label: fewer name tags in the world
+            if (ours) {
+                e.customName(null);
+                e.setCustomNameVisible(false);
+            }
+            pdc.remove(Keys.LABEL);
+            pdc.remove(Keys.LABEL_TEXT);
+            return;
+        }
         Component name = e instanceof org.bukkit.entity.Item item ? item.getItemStack().effectiveName()
             : Component.translatable(e.getType().translationKey());
-        var label = Component.text().append(name.colorIfAbsent(NamedTextColor.WHITE).decorate(TextDecoration.BOLD));
-        if (count > 1) label.append(Component.text(" x" + count, NamedTextColor.YELLOW, TextDecoration.BOLD));
+        // muted colours so labels sit quietly in the world: gray name, dull gold count
+        var label = Component.text().append(name.colorIfAbsent(NamedTextColor.GRAY));
+        if (count > 1) label.append(Component.text(" x" + count, COUNT_COLOR));
         Component built = label.build();
         e.customName(built);
         e.setCustomNameVisible(true);

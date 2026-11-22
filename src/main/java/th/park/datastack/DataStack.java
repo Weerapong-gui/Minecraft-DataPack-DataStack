@@ -27,7 +27,7 @@ public final class DataStack extends JavaPlugin {
             getConfig().getDouble("pull-radius", 4.0),
             getConfig().getInt("max-mob-stack", 10000),
             getConfig().getInt("max-item-stack", 10000),
-            getConfig().getDouble("label-range", 10.0));
+            getConfig().getDouble("label-range", 6.0));
         getServer().getPluginManager().registerEvents(new MobDeathListener(), this);
         getServer().getPluginManager().registerEvents(new th.park.datastack.mob.MobMerger(this), this);
         getServer().getPluginManager().registerEvents(new th.park.datastack.mob.MobInteractListener(this), this);

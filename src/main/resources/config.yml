@@ -5,4 +5,4 @@ pull-radius: 4.0
 max-mob-stack: 10000
 max-item-stack: 10000
 # stack labels (xN) show only to players within this many blocks; 0 = any distance (needs packetevents)
-label-range: 10.0
+label-range: 6.0

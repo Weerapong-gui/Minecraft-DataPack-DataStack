@@ -26,4 +26,13 @@ class LabelsTest {
         assertFalse(Labels.isOurs("Bob x"));
         assertFalse(Labels.isOurs("Bobx12"));
     }
+    @org.junit.jupiter.api.Test void singleMobHasNoLabel() {
+        org.junit.jupiter.api.Assertions.assertFalse(Labels.shown(false, 1));
+    }
+    @org.junit.jupiter.api.Test void mobStackHasLabel() {
+        org.junit.jupiter.api.Assertions.assertTrue(Labels.shown(false, 2));
+    }
+    @org.junit.jupiter.api.Test void singleItemKeepsLabel() {
+        org.junit.jupiter.api.Assertions.assertTrue(Labels.shown(true, 1));
+    }
 }

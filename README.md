@@ -4,7 +4,7 @@ Merges nearby same-kind mobs and dropped items into one entity and shows the
 total above it as `xN`, allowing far more than 64.
 
 ## Features
-- Mobs of the same kind and state (age, colour/variant, no gear, not tamed or renamed) merge into one stack with an `xN` label.
+- Mobs of the same kind and state (age, colour/variant, no gear, not tamed or renamed) merge into one stack with an `xN` label. Labels are muted (gray name, dull gold count); a lone mob has no label.
 - Killing a stack removes one mob at a time; whole-stack deaths (lava, void, fall) multiply drops and XP by N.
 - Name tags, shearing, milking, breeding, conversions (zombie villager cure, drowning, etc.) act on one mob and leave the rest.
 - Stacks count toward Paper's mob cap (N each), and random despawn shrinks a stack by one instead of removing it.
@@ -19,7 +19,7 @@ total above it as `xN`, allowing far more than 64.
 | `pull-radius` | `4.0` | Blocks within which a bigger item pile flies into a smaller one |
 | `max-mob-stack` | `10000` | Maximum mobs per stack |
 | `max-item-stack` | `10000` | Maximum items per stack |
-| `label-range` | `10.0` | Show `xN` labels only to players within this many blocks (labels draw through walls); `0` = any distance. Needs the PacketEvents plugin, otherwise ignored |
+| `label-range` | `6.0` | Show `xN` labels only to players within this many blocks (labels draw through walls); `0` = any distance. Needs the PacketEvents plugin, otherwise ignored |
 
 ## Commands (op, permission `datastack.debug`)
 - `/datastack set <n> [selector]` - set a stack's count (minimum 1).
