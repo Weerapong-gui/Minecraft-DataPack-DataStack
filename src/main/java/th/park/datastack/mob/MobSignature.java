@@ -20,6 +20,7 @@ public final class MobSignature {
     public static boolean eligible(LivingEntity e) {
         if (!(e instanceof Mob) || !e.isValid() || e.isDead()) return false;
         if (e instanceof EnderDragon || e instanceof Wither || e instanceof Warden) return false;
+        if (NeverStack.is(e)) return false; // villagers, wandering traders, zombie villagers: never, in any case
         if (e instanceof Tameable t && t.isTamed()) return false;
         // a custom name without our label marker is a player-given name
         // a custom name that is not our xN label (or lacks our marker) is a player-given name

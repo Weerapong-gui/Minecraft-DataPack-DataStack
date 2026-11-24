@@ -43,7 +43,10 @@ public final class DataStack extends JavaPlugin {
         }
         // chunks loaded before enable fire no EntitiesLoadEvent for us
         getServer().getScheduler().runTask(this, () -> {
-            for (var w : getServer().getWorlds()) for (var en : w.getEntities()) StackCount.relabel(en);
+            for (var w : getServer().getWorlds()) for (var en : w.getEntities()) {
+                th.park.datastack.mob.NeverStack.split(en);
+                StackCount.relabel(en);
+            }
         });
     }
 

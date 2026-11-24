@@ -4,7 +4,7 @@ Merges nearby same-kind mobs and dropped items into one entity and shows the
 total above it as `xN`, allowing far more than 64.
 
 ## Features
-- Mobs of the same kind and state (age, colour/variant, no gear, not tamed or renamed) merge into one stack with an `xN` label. Labels are muted (gray name, dull gold count); a lone mob has no label.
+- Mobs of the same kind and state (age, colour/variant, no gear, not tamed or renamed) merge into one stack with an `xN` label. Labels are muted (gray name, dull gold count); a lone mob has no label. Villagers, wandering traders and zombie villagers never stack; old stacks of them split back into single mobs when their chunk loads.
 - Killing a stack removes one mob at a time; whole-stack deaths (lava, void, fall) multiply drops and XP by N.
 - Name tags, shearing, milking, breeding, conversions (zombie villager cure, drowning, etc.) act on one mob and leave the rest.
 - Stacks count toward Paper's mob cap (N each), and random despawn shrinks a stack by one instead of removing it.
