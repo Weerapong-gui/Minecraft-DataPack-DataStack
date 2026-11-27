@@ -39,3 +39,7 @@ Try it on a test server first, run the [owner checklist](docs/owner-test-checkli
 and only then copy the jar to the live server.
 
 **Before going live:** set `settings.log-named-deaths: false` in `spigot.yml`. The `xN` label is a custom name, so otherwise every kill of a stacked mob logs a line to the console.
+
+## License
+
+[MIT](LICENSE)
